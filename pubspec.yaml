@@ -1,28 +1,52 @@
-name: chronosleep
-description: "A new Flutter project."
+name: chronotherapy_app
+description: A circadian light analyzer for chronotherapy
 publish_to: 'none'
-version: 0.1.0
+version: 1.0.0+1
 
 environment:
-  sdk: ^3.10.1
+  sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  sensors_plus: ^7.0.0           # accelerometer & orientation
-  light: ^4.1.0                 # ambient light sensor plugin (Android)
-  device_info_plus: ^12.3.0
-  permission_handler: ^12.0.1
-  fl_chart: ^1.1.1
-  path_provider: ^2.0.13
-  sqflite: ^2.2.8               # local DB
-  riverpod: ^3.0.3              # state management (or provider)
-  intl: ^0.20.2
-  csv: ^6.0.0                   # export
-  uuid: ^4.5.2
+  
+  # Sensors
+  sensors_plus: ^4.0.2
+  light: ^3.0.1
+  
+  # Device info
+  device_info_plus: ^9.1.1
+  permission_handler: ^11.1.0
+  
+  # Charts
+  fl_chart: ^0.66.0
+  
+  # Storage
+  path_provider: ^2.1.1
+  sqflite: ^2.3.0
+  
+  # State management
+  provider: ^6.1.1
+  
+  # Utils
+  uuid: ^4.3.3
+  intl: ^0.19.0
+  
+  # Export
+  csv: ^6.0.0
+  pdf: ^3.10.7
+  
+  # Math
+  collection: ^1.18.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^3.0.1
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/data/spd_presets.json
+    - assets/data/device_profiles.json
+    - assets/data/prc_table.json

@@ -35,7 +35,6 @@ class SensorService {
         _emitSample();
       });
     } catch (e) {
-      // plugin not available or permission denied
       _lastAmbientLux = null;
     }
 
@@ -45,13 +44,25 @@ class SensorService {
       _emitSample();
     });
 
-    // TODO: subscribe to screen state / brightness via platform channels (Android/iOS)
-    // For now we keep _screenOn true; app will update it via platform-specific hooks.
+    // no await needed here beyond subscribing
   }
 
-  void stop() {
-    _luxSubscription?.cancel();
-    _accelSub?.cancel();
+  Future<void> stop() async {
+    try {
+      await _luxSubscription?.cancel();
+    } catch (_) {
+      // ignore or log
+    } finally {
+      _luxSubscription = null;
+    }
+
+    try {
+      await _accelSub?.cancel();
+    } catch (_) {
+      // ignore or log
+    } finally {
+      _accelSub = null;
+    }
   }
 
   /// platform code should set this when screen changes
