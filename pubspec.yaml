@@ -1,0 +1,28 @@
+name: chronosleep
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.10.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sensors_plus: ^7.0.0           # accelerometer & orientation
+  light: ^4.1.0                 # ambient light sensor plugin (Android)
+  device_info_plus: ^12.3.0
+  permission_handler: ^12.0.1
+  fl_chart: ^1.1.1
+  path_provider: ^2.0.13
+  sqflite: ^2.2.8               # local DB
+  riverpod: ^3.0.3              # state management (or provider)
+  intl: ^0.20.2
+  csv: ^6.0.0                   # export
+  uuid: ^4.5.2
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
