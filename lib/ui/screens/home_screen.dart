@@ -1,9 +1,9 @@
 // lib/ui/screens/home_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../services/recording_manager.dart';
 import 'recording_screen.dart';
+import 'history_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -106,7 +106,12 @@ class HomeScreen extends StatelessWidget {
                 // Secondary buttons
                 OutlinedButton.icon(
                   onPressed: () {
-                    // TODO: Navigate to sessions history
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const HistoryScreen(),
+                      ),
+                    );
                   },
                   icon: const Icon(Icons.history),
                   label: const Text('View Past Sessions'),
@@ -124,7 +129,12 @@ class HomeScreen extends StatelessWidget {
 
                 OutlinedButton.icon(
                   onPressed: () {
-                    // TODO: Navigate to settings
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SettingsScreen(),
+                      ),
+                    );
                   },
                   icon: const Icon(Icons.settings),
                   label: const Text('Settings & Calibration'),

@@ -5,10 +5,10 @@ import 'package:path_provider/path_provider.dart';
 import '../models/session_data.dart';
 
 class StorageService {
-  Future<Directory> get _appDocDir async =>
+  Future<Directory> get appDocDir async =>
       await getApplicationDocumentsDirectory();
   Future<File> _fileForSession(String id) async {
-    final dir = await _appDocDir;
+    final dir = await appDocDir;
     return File('${dir.path}/session_$id.json');
   }
 
@@ -31,7 +31,7 @@ class StorageService {
   }
 
   Future<List<String>> listSessionIds() async {
-    final dir = await _appDocDir;
+    final dir = await appDocDir;
     final files = dir
         .listSync()
         .whereType<File>()

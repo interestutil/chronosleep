@@ -8,6 +8,7 @@ import '../core/melanopic_calculator.dart';
 import '../core/cs_model.dart';
 import '../core/msi_model.dart';
 import '../core/prc_model.dart';
+import '../core/sleep_detector.dart';
 import '../utils/time_utils.dart';
 
 class ProcessingPipeline {
@@ -38,6 +39,9 @@ class ProcessingPipeline {
     // Estimate deltaT from samples
     final deltaT = _estimateDeltaT(session.samples);
 
+    // Detect potential sleep episodes (for longer recordings)
+    final sleepEpisodes = SleepDetector.detect(session.samples);
+
     // 2. Process each sample
     final List<DateTime> timestamps = [];
     final List<double> luxValues = [];
@@ -46,16 +50,20 @@ class ProcessingPipeline {
     final List<double> doses = [];
 
     for (final sample in session.samples) {
-      // Calculate total lux at eye
+      // Calculate total lux at eye (environmental)
       final totalLux = MelanopicCalculator.calculateTotalLuxAtEye(sample);
 
-      // Calculate melanopic EDI
+      // If within a detected sleep episode, attenuate effective lux
+      final inSleep = _isInSleep(sample.timestamp, sleepEpisodes);
+      final effectiveLux = inSleep ? totalLux * 0.1 : totalLux;
+
+      // Calculate melanopic EDI from effective lux
       final melanopicEDI = MelanopicCalculator.calculateMelanopicEDI(
-        totalLux: totalLux,
+        totalLux: effectiveLux,
         lightType: lightType,
       );
 
-      // Calculate CS
+      // Calculate CS from effective melanopic lux
       final cs = csModel.calculateCS(melanopicEDI);
 
       // Calculate dose for this bin
@@ -85,6 +93,18 @@ class ProcessingPipeline {
         melanopicValues.reduce((a, b) => a + b) / melanopicValues.length;
 
     // 6. Create results model
+    // Add simple sleep metadata if any episodes detected
+    Map<String, dynamic>? meta = session.meta == null
+        ? null
+        : Map<String, dynamic>.from(session.meta!);
+    if (sleepEpisodes.isNotEmpty) {
+      final totalSleepMinutes = sleepEpisodes
+          .map((e) => e.end.difference(e.start).inMinutes)
+          .fold<int>(0, (a, b) => a + b);
+      meta ??= {};
+      meta!['sleepEpisodeCount'] = sleepEpisodes.length;
+      meta['sleepMinutes'] = totalSleepMinutes;
+    }
     return ResultsModel(
       sessionId: session.id,
       startTime: session.startedAt,
@@ -101,7 +121,7 @@ class ProcessingPipeline {
       peakCS: peakCS,
       averageMelanopicLux: averageMelanopicLux,
       lightType: lightType,
-      metadata: session.meta,
+      metadata: meta,
     );
   }
 
@@ -118,5 +138,14 @@ class ProcessingPipeline {
 
     final avgSeconds = totalSeconds / (samples.length - 1);
     return avgSeconds / 3600.0; // convert to hours
+  }
+
+  bool _isInSleep(DateTime timestamp, List<SleepEpisode> episodes) {
+    for (final e in episodes) {
+      if (!timestamp.isBefore(e.start) && !timestamp.isAfter(e.end)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

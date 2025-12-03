@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
+import 'ui/screens/home_screen.dart';
 
 void main() {
-  runApp(const MainApp());
+  runApp(const ChronoSleepApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class ChronoSleepApp extends StatelessWidget {
+  const ChronoSleepApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
+    return MaterialApp(
+      title: 'ChronoTherapy Analyzer',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.deepPurple,
+        scaffoldBackgroundColor: Colors.white,
       ),
+      home: const HomeScreen(),
     );
   }
 }
+

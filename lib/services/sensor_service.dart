@@ -26,15 +26,15 @@ class SensorService {
   Future<void> start() async {
     // subscribe to ambient light (Android)
     try {
-      _luxSubscription = _lightPlugin.lightSensorStream.listen((luxVal) {
-        if (luxVal is double || luxVal is int) {
-          _lastAmbientLux = (luxVal as num).toDouble();
-        } else if (luxVal is String) {
-          _lastAmbientLux = luxVal as double ?? _lastAmbientLux;
+      _luxSubscription =
+          _lightPlugin.lightSensorStream.listen((dynamic luxVal) {
+        if (luxVal is num) {
+          _lastAmbientLux = luxVal.toDouble();
         }
         _emitSample();
       });
     } catch (e) {
+      // Plugin not available or permission denied (common on some iOS devices)
       _lastAmbientLux = null;
     }
 

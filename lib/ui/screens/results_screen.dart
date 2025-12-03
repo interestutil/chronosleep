@@ -1,10 +1,13 @@
 // lib/ui/screens/results_screen.dart
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../models/results_model.dart';
 import '../../core/prc_model.dart';
+import '../../services/storage_service.dart';
 import 'package:intl/intl.dart';
+import 'simulation_screen.dart';
 
 class ResultsScreen extends StatefulWidget {
   final ResultsModel results;
@@ -410,15 +413,36 @@ class _ResultsScreenState extends State<ResultsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(Icons.lightbulb_outline, color: Colors.green.shade700),
-                const SizedBox(width: 8),
-                Text(
-                  'Recommendations',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade700,
+                Row(
+                  children: [
+                    Icon(Icons.lightbulb_outline,
+                        color: Colors.green.shade700),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Recommendations',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ],
+                ),
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            SimulationScreen(baseResults: widget.results),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.science),
+                  label: const Text('Simulate plan'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.green.shade700,
                   ),
                 ),
               ],
@@ -984,8 +1008,40 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   void _exportResults() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Export functionality coming soon')),
-    );
+    () async {
+      try {
+        final buffer = StringBuffer();
+        buffer.writeln('timestamp,lux,melanopic,cs');
+        for (int i = 0; i < widget.results.timestamps.length; i++) {
+          final t = widget.results.timestamps[i].toIso8601String();
+          final lux = widget.results.luxValues[i];
+          final mel = widget.results.melanopicValues[i];
+          final cs = widget.results.csValues[i];
+          buffer.writeln('$t,$lux,$mel,$cs');
+        }
+
+        final storage = StorageService();
+        final dir = await storage.appDocDir;
+        final file = File(
+          '${dir.path}/results_${widget.results.sessionId}.csv',
+        );
+        await file.writeAsString(buffer.toString());
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exported to ${file.path}'),
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }();
   }
 }
