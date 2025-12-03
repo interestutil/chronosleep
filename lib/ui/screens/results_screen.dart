@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../models/results_model.dart';
 import '../../core/prc_model.dart';
 import '../../services/storage_service.dart';
@@ -167,54 +168,26 @@ class _ResultsScreenState extends State<ResultsScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Circular score indicator
-            SizedBox(
-              width: 150,
-              height: 150,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  // Background circle
-                  CircularProgressIndicator(
-                    value: 1.0,
-                    strokeWidth: 12,
-                    backgroundColor: Colors.white.withOpacity(0.3),
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Colors.transparent,
-                    ),
+            // Score number
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${score.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 64,
+                    fontWeight: FontWeight.bold,
                   ),
-                  // Progress circle
-                  CircularProgressIndicator(
-                    value: score / 100,
-                    strokeWidth: 12,
-                    backgroundColor: Colors.transparent,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Colors.white,
-                    ),
+                ),
+                const Text(
+                  'out of 100',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
                   ),
-                  // Score text
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '${score.toStringAsFixed(0)}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const Text(
-                        'out of 100',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 16),
@@ -287,6 +260,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: color, size: 32),
             const SizedBox(height: 8),
@@ -299,12 +273,17 @@ class _ResultsScreenState extends State<ResultsScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
+            SizedBox(
+              height: 32,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
               ),
             ),
           ],
@@ -841,6 +820,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
               '${widget.results.healthScore.toStringAsFixed(0)}/100'),
         ]),
         const SizedBox(height: 16),
+        _buildVerificationCard(),
+        const SizedBox(height: 16),
         _buildDetailCard('Scientific Parameters Used', [
           _buildDetailRow('k (sensitivity)', '0.25'),
           _buildDetailRow('a (CS steepness)', '0.005'),
@@ -886,6 +867,157 @@ class _ResultsScreenState extends State<ResultsScreen> {
             ),
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildVerificationCard() {
+    // Calculate verification values
+    final deltaT = widget.results.durationHours / widget.results.csValues.length;
+    final calculatedDose = widget.results.csValues
+        .map((cs) => cs * deltaT)
+        .fold(0.0, (a, b) => a + b);
+    
+    return Card(
+      elevation: 2,
+      color: Colors.blue.shade50,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.verified, color: Colors.blue.shade700),
+                const SizedBox(width: 8),
+                Text(
+                  'Calculation Verification',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade700,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _buildVerificationRow(
+              'Step 1: Total Dose (X)',
+              'Sum of CS × Δt',
+              '${calculatedDose.toStringAsFixed(4)} CS·h',
+              calculatedDose,
+              widget.results.totalDoseX,
+            ),
+            const SizedBox(height: 12),
+            _buildVerificationRow(
+              'Step 2: MSI Calculation',
+              'MSI = 1 - exp(-k × X)',
+              '${widget.results.msiPredicted.toStringAsFixed(4)}',
+              widget.results.msiPredicted,
+              widget.results.msiPredicted,
+              showFormula: true,
+            ),
+            const SizedBox(height: 12),
+            _buildVerificationRow(
+              'Step 3: Average CS',
+              'Mean of all CS values',
+              '${widget.results.averageCS.toStringAsFixed(4)}',
+              widget.results.averageCS,
+              widget.results.csValues.reduce((a, b) => a + b) / widget.results.csValues.length,
+            ),
+            const SizedBox(height: 12),
+            _buildVerificationRow(
+              'Step 4: Avg Melanopic Lux',
+              'Mean of melanopic values',
+              '${widget.results.averageMelanopicLux.toStringAsFixed(1)}',
+              widget.results.averageMelanopicLux,
+              widget.results.melanopicValues.reduce((a, b) => a + b) / widget.results.melanopicValues.length,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Formula: k = 0.25, a = 0.005, CS_max = 0.7',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey.shade700,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVerificationRow(
+    String label,
+    String description,
+    String value,
+    double actual,
+    double expected, {
+    bool showFormula = false,
+  }) {
+    final difference = (actual - expected).abs();
+    final isMatch = difference < 0.0001; // Allow small floating point differences
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    description,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: isMatch ? Colors.green.shade700 : Colors.orange.shade700,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  isMatch ? Icons.check_circle : Icons.info_outline,
+                  size: 16,
+                  color: isMatch ? Colors.green.shade700 : Colors.orange.shade700,
+                ),
+              ],
+            ),
+          ],
+        ),
+        if (showFormula) ...[
+          const SizedBox(height: 4),
+          Text(
+            'k = 0.25, X = ${widget.results.totalDoseX.toStringAsFixed(4)}',
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey.shade600,
+              fontFamily: 'monospace',
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -990,6 +1122,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               label: const Text('New Session'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
@@ -1010,6 +1143,24 @@ class _ResultsScreenState extends State<ResultsScreen> {
   void _exportResults() {
     () async {
       try {
+        // Request storage permission if needed (Android)
+        if (Platform.isAndroid) {
+          final status = await Permission.storage.status;
+          if (!status.isGranted) {
+            final result = await Permission.storage.request();
+            if (!result.isGranted) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Storage permission is required to export files'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+              return;
+            }
+          }
+        }
+
         final buffer = StringBuffer();
         buffer.writeln('timestamp,lux,melanopic,cs');
         for (int i = 0; i < widget.results.timestamps.length; i++) {
@@ -1022,6 +1173,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
         final storage = StorageService();
         final dir = await storage.appDocDir;
+        // Ensure directory exists
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
         final file = File(
           '${dir.path}/results_${widget.results.sessionId}.csv',
         );
@@ -1031,6 +1186,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Exported to ${file.path}'),
+            duration: const Duration(seconds: 3),
           ),
         );
       } catch (e) {
@@ -1039,6 +1195,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           SnackBar(
             content: Text('Export failed: $e'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
           ),
         );
       }

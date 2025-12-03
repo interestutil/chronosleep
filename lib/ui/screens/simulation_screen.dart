@@ -72,6 +72,7 @@ class _SimulationScreenState extends State<SimulationScreen> {
                 label: const Text('Run Simulation'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
               ),

@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
+import 'debug_verification_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -50,11 +51,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildBrightnessSection(),
           const SizedBox(height: 20),
           _buildModelParamsSection(),
+          const SizedBox(height: 20),
+          _buildDebugSection(),
           const SizedBox(height: 30),
           ElevatedButton(
             onPressed: _save,
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
             child: const Text(
@@ -171,6 +175,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ],
+    );
+  }
+
+  Widget _buildDebugSection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Debug & Verification',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Manually input values and verify calculations step-by-step.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DebugVerificationScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.bug_report),
+                label: const Text('Open Debug & Verification'),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

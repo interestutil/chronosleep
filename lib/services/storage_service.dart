@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../models/session_data.dart';
 
 class StorageService {
@@ -13,6 +14,19 @@ class StorageService {
   }
 
   Future<void> saveSession(SessionData session) async {
+    // Request storage permission if needed (Android)
+    if (Platform.isAndroid) {
+      final status = await Permission.storage.status;
+      if (!status.isGranted) {
+        await Permission.storage.request();
+      }
+    }
+
+    final dir = await appDocDir;
+    // Ensure directory exists
+    if (!await dir.exists()) {
+      await dir.create(recursive: true);
+    }
     final file = await _fileForSession(session.id);
     final jsonStr = jsonEncode(session.toJson());
     await file.writeAsString(jsonStr);
