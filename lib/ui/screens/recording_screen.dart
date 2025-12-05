@@ -46,16 +46,36 @@ class _RecordingScreenState extends State<RecordingScreen> with WidgetsBindingOb
     
     if (!_isRecording) return; // Only handle lifecycle during recording
     
+    if (kDebugMode) {
+      debugPrint('RecordingScreen: App lifecycle changed to: $state');
+    }
+    
     // Handle sensor pause/resume
+    // NOTE: With foreground service active, sensors should continue in background
+    // Only pause if foreground service is not active
     switch (state) {
       case AppLifecycleState.paused:
-      case AppLifecycleState.inactive:
-        // App going to background - pause sensors
+        // App going to background - only pause if no foreground service
+        // The pause() method will check foreground service status internally
         _sensorService.pause();
+        if (kDebugMode) {
+          debugPrint('RecordingScreen: App paused - sensors may continue with foreground service');
+        }
+        break;
+      case AppLifecycleState.inactive:
+        // App is inactive (e.g., notification tray pulled down)
+        // Don't pause sensors - this is temporary and sensors should continue
+        if (kDebugMode) {
+          debugPrint('RecordingScreen: App inactive (notification tray?) - keeping sensors active');
+        }
+        // Don't call pause() for inactive state - it's too aggressive
         break;
       case AppLifecycleState.resumed:
-        // App coming to foreground - resume sensors
+        // App coming to foreground - resume sensors (in case they were paused)
         _sensorService.resume();
+        if (kDebugMode) {
+          debugPrint('RecordingScreen: App resumed - sensors active');
+        }
         break;
       case AppLifecycleState.detached:
       case AppLifecycleState.hidden:
@@ -63,11 +83,10 @@ class _RecordingScreenState extends State<RecordingScreen> with WidgetsBindingOb
         break;
     }
     
-    // Update screen state when app goes to background/foreground
-    if (_brightnessTracker != null) {
-      final screenOn = state == AppLifecycleState.resumed;
-      _brightnessTracker!.updateScreenState(screenOn);
-    }
+    // DON'T update screen state based on app lifecycle
+    // The screen brightness tracker's periodic timer will handle screen state
+    // The screen might still be on even when app is in background
+    // Setting screen state to false when app goes to background would be incorrect
   }
 
   void _initializeRecording() {

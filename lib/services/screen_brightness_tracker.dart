@@ -39,6 +39,7 @@ class ScreenBrightnessTracker {
   }
 
   /// Update brightness from system and notify SensorService
+  /// This method continues to work in background if foreground service is active
   Future<void> _updateBrightness() async {
     if (!_isTracking) return;
     
@@ -65,24 +66,41 @@ class ScreenBrightnessTracker {
       }
     } catch (e) {
       // Screen brightness may not be available on all devices
-      // On some devices, reading brightness might fail when screen is off
-      // Try to detect screen off by catching the error
+      // On some devices, reading brightness might fail when screen is off or app is in background
+      // Don't immediately assume screen is off - keep last known state
       if (kDebugMode) {
         debugPrint('ScreenBrightnessTracker: Error reading brightness: $e');
+        debugPrint('ScreenBrightnessTracker: Keeping last known brightness state');
       }
       
-      // If we previously had a brightness reading and now we can't read it,
-      // the screen might be off
+      // If we have a last known brightness, keep using it
+      // This ensures continuous monitoring even when brightness can't be read
       if (_lastBrightness != null && _lastBrightness! > 0.01) {
-        // Screen might have turned off
-        _lastBrightness = 0.0;
-        sensorService.updateScreenState(on: false, brightness: null);
+        // Keep using the last known brightness value
+        // This ensures monitoring continues even when brightness API fails
+        // The screen is likely still on, we just can't read it right now (e.g., app in background)
+        final screenOn = true; // Assume screen is still on if we had a reading
+        sensorService.updateScreenState(
+          on: screenOn,
+          brightness: _lastBrightness, // Use last known brightness
+        );
         if (kDebugMode) {
-          debugPrint('ScreenBrightnessTracker: Screen appears to be off');
+          debugPrint('ScreenBrightnessTracker: Using last known brightness: ${(_lastBrightness! * 100).toStringAsFixed(1)}% (brightness read failed)');
+        }
+      } else if (_lastBrightness == null) {
+        // First read failed - assume screen is on with unknown brightness
+        // This is safer than assuming it's off
+        sensorService.updateScreenState(on: true, brightness: null);
+        if (kDebugMode) {
+          debugPrint('ScreenBrightnessTracker: First read failed - assuming screen on');
         }
       } else {
-        // First read or already off - default to screen on with unknown brightness
-        sensorService.updateScreenState(on: true, brightness: null);
+        // _lastBrightness is 0 or very low - screen is likely off
+        // Keep this state but still emit a sample
+        sensorService.updateScreenState(on: false, brightness: null);
+        if (kDebugMode) {
+          debugPrint('ScreenBrightnessTracker: Screen appears off (last brightness was 0)');
+        }
       }
     }
   }
