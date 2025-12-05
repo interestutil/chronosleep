@@ -17,16 +17,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late Map<double, double> _brightnessToLux;
   double _k = CircadianConstants.kDefault;
   double _a = CircadianConstants.aDefault;
+  bool _smoothingEnabled = CircadianConstants.sensorSmoothingEnabled;
+  double _smoothingFactor = CircadianConstants.sensorSmoothingFactor;
+  double _viewingDistanceCm = CircadianConstants.viewingDistanceCm;
 
   @override
   void initState() {
     super.initState();
     _brightnessToLux = Map.of(CircadianConstants.screenBrightnessToLux);
+    _smoothingEnabled = CircadianConstants.sensorSmoothingEnabled;
+    _smoothingFactor = CircadianConstants.sensorSmoothingFactor;
+    _viewingDistanceCm = CircadianConstants.viewingDistanceCm;
   }
 
   void _save() {
     // Apply to global constants map (mutable)
     CircadianConstants.screenBrightnessToLux = Map.of(_brightnessToLux);
+    CircadianConstants.sensorSmoothingEnabled = _smoothingEnabled;
+    CircadianConstants.sensorSmoothingFactor = _smoothingFactor;
+    CircadianConstants.viewingDistanceCm = _viewingDistanceCm;
     // For now, k and a are not fed back into models globally (would require refactoring),
     // but we keep them here to show intent and UI.
 
@@ -49,6 +58,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           _buildBrightnessSection(),
+          const SizedBox(height: 20),
+          _buildViewingDistanceSection(),
+          const SizedBox(height: 20),
+          _buildSensorSmoothingSection(),
           const SizedBox(height: 20),
           _buildModelParamsSection(),
           const SizedBox(height: 20),
@@ -130,6 +143,139 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               );
             }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildViewingDistanceSection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Viewing Distance',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Distance from your eyes to the screen. Used to calculate accurate screen light contribution.\n'
+              'Typical viewing distance: 30-40 cm.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Distance: ${_viewingDistanceCm.toStringAsFixed(0)} cm',
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Slider(
+              value: _viewingDistanceCm,
+              min: 20.0,
+              max: 60.0,
+              divisions: 40,
+              label: '${_viewingDistanceCm.toStringAsFixed(0)} cm',
+              onChanged: (value) {
+                setState(() {
+                  _viewingDistanceCm = value;
+                });
+              },
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '20 cm\n(close)',
+                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                  textAlign: TextAlign.center,
+                ),
+                Text(
+                  '60 cm\n(far)',
+                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSensorSmoothingSection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Sensor Smoothing',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                Switch(
+                  value: _smoothingEnabled,
+                  onChanged: (value) {
+                    setState(() {
+                      _smoothingEnabled = value;
+                    });
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Reduces sensor fluctuations using exponential moving average. '
+              'Disable for raw sensor readings.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            if (_smoothingEnabled) ...[
+              const SizedBox(height: 16),
+              Text(
+                'Smoothing Factor: ${(_smoothingFactor * 100).toStringAsFixed(0)}%',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 8),
+              Slider(
+                value: _smoothingFactor,
+                min: 0.1,
+                max: 1.0,
+                divisions: 9,
+                label: '${(_smoothingFactor * 100).toStringAsFixed(0)}%',
+                onChanged: (value) {
+                  setState(() {
+                    _smoothingFactor = value;
+                  });
+                },
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'More smoothing\n(less responsive)',
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                    textAlign: TextAlign.center,
+                  ),
+                  Text(
+                    'Less smoothing\n(more responsive)',
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

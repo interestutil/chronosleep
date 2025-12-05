@@ -97,7 +97,11 @@ class _DebugVerificationScreenState extends State<DebugVerificationScreen> {
       buffer.writeln('Step 1: Total Lux at Eye');
       buffer.writeln('  Ambient Lux: ${lux.toStringAsFixed(1)}');
       if (_screenOn && screenBrightness != null) {
-        final screenLux = MelanopicCalculator.estimateScreenLux(screenBrightness);
+        final screenLux = MelanopicCalculator.estimateScreenLux(
+          brightness: screenBrightness,
+          viewingDistanceCm: null, // Uses default from constants
+          viewingAngleRadians: null, // No angle data in debug screen
+        );
         buffer.writeln('  Screen Lux: ${screenLux.toStringAsFixed(1)}');
         buffer.writeln('  Total Lux: ${totalLux.toStringAsFixed(1)}');
       } else {
