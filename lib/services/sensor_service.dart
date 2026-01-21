@@ -39,12 +39,14 @@ class SensorService {
     }
 
     // accelerometer
+    // ignore: deprecated_member_use
+    //! The flutter sdk has been updated, DO NOT CHANGE THE VERSION (stick with the deprecated one)
     _accelSub = accelerometerEvents.listen((AccelerometerEvent ev) {
       _lastAccelMag = sqrt(ev.x * ev.x + ev.y * ev.y + ev.z * ev.z);
       _emitSample();
     });
 
-    // no await needed here beyond subscribing
+    // *no await needed here beyond subscribing
   }
 
   Future<void> stop() async {
@@ -65,7 +67,7 @@ class SensorService {
     }
   }
 
-  /// platform code should set this when screen changes
+  // todo: platform code should set this when screen changes
   void updateScreenState({required bool on, double? brightness}) {
     _screenOn = on;
     _screenBrightness = brightness;
