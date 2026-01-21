@@ -116,21 +116,413 @@ dependencies:
 
 ## Implementation Steps
 
+### Team Assignment - Fully Parallel Work
+
+The implementation is split between **Developer A** and **Developer B** to enable **100% parallel work with zero dependencies**.
+
+**Key Strategy**: Define interfaces upfront, use mocks/stubs during development, integrate at the end.
+
+---
+
+## 👤 Developer A: Core Color Science & Processing
+
+**Focus**: Mathematical foundations and color space conversions
+
 ### Step 1: Create CIE Color Space Models
+**File**: `lib/core/cie_color_space.dart`
+- Define `CIEXYZ` class (tristimulus values)
+- Define `CIEChromaticity` class (xy coordinates)
+- Define `RGB` class (color values)
+- Add validation methods
+- Add utility methods (distance calculations, etc.)
+
+**Estimated Time**: 2-3 hours
 
 ### Step 2: Implement RGB → XYZ Conversion
+**File**: `lib/core/cie_color_converter.dart`
+- Implement gamma correction (sRGB linearization)
+- Implement RGB → XYZ transformation matrix
+- Add inverse gamma correction
+- Add validation and error handling
+
+**Estimated Time**: 3-4 hours
 
 ### Step 3: Implement XYZ → xy Conversion
+**File**: `lib/core/cie_color_converter.dart` (same file as Step 2)
+- Implement XYZ → xy calculation
+- Add edge case handling (division by zero)
+- Add D65 white point fallback
+- Add convenience method: `rgbToChromaticity()`
+
+**Estimated Time**: 1-2 hours
 
 ### Step 4: Implement xy → CCT Conversion
+**File**: `lib/core/cct_calculator.dart`
+- Implement McCamy's formula
+- Implement Hernández-Andrés method
+- Add D_uv calculation (distance from Planckian locus)
+- Add method selection logic
+- Add validation and clamping
+
+**Estimated Time**: 3-4 hours
+
+**Developer A Total**: ~9-13 hours
+
+**Dependencies**: None
+
+**Deliverables**:
+- `lib/core/cie_color_space.dart`
+- `lib/core/cie_color_converter.dart`
+- `lib/core/cct_calculator.dart`
+- Unit tests for all conversion methods
+
+---
+
+## 👤 Developer B: Camera Integration & UI
+
+**Focus**: Camera access, image processing, and user interface
 
 ### Step 5: Create Camera Service
+**File**: `lib/services/camera_color_detector.dart`
+- Add camera package dependency
+- Implement camera initialization
+- Handle camera permissions
+- Implement image capture
+- Add error handling and disposal
+- **Use mock RGB data** for testing (don't wait for color conversion)
+
+**Estimated Time**: 4-5 hours
 
 ### Step 6: Create Image Processor
+**File**: `lib/services/image_processor.dart`
+- Implement RGB extraction from images
+- Add neutral region detection
+- Implement weighted averaging
+- Add region sampling logic
+- Optimize for performance
+- **Return RGB objects** (will integrate with A's code later)
 
-### Step 7: Create Main Detector Service
+**Estimated Time**: 3-4 hours
+
+### Step 7: Create Main Detector Service (with Mock Integration)
+**File**: `lib/services/lighting_environment_detector.dart`
+- Create service structure
+- Integrate camera service (Step 5)
+- Integrate image processor (Step 6)
+- **Use mock/stub color conversion** (simple placeholder functions)
+- Implement detection pipeline structure
+- Add heuristic fallback
+- Add confidence calculation
+- **Note**: Will replace mocks with real color conversion code in final integration
+
+**Estimated Time**: 4-5 hours
 
 ### Step 8: Integrate with UI
+**File**: `lib/ui/screens/recording_screen.dart`
+- Add "Detect with Camera" button
+- Add loading states
+- Display detection results
+- Add confidence indicators
+- Allow user override
+- Add error handling UI
+- **Use mock detection results** for UI testing
+
+**Estimated Time**: 3-4 hours
+
+**Developer B Total**: ~14-18 hours
+
+**Dependencies**: None (uses mocks/stubs)
+
+**Deliverables**:
+- `lib/services/camera_color_detector.dart`
+- `lib/services/image_processor.dart`
+- `lib/services/lighting_environment_detector.dart` (with mock color conversion)
+- UI integration in recording screen
+- Integration tests (with mocks)
+
+---
+
+## 🔗 Integration Phase (After Both Complete)
+
+### Step 9: Connect the Pieces (30-60 minutes)
+
+**Who**: Either developer or both together
+
+**Task**: Replace mocks with real implementations
+
+1. In `lighting_environment_detector.dart`:
+   - Remove mock color conversion functions
+   - Import Developer A's modules:
+     ```dart
+     import '../core/cie_color_space.dart';
+     import '../core/cie_color_converter.dart';
+     import '../core/cct_calculator.dart';
+     ```
+   - Replace mock calls with real function calls:
+     ```dart
+     // Before (mock):
+     final kelvin = _mockRGBToCCT(rgb);
+     
+     // After (real):
+     final chromaticity = CIEColorConverter.rgbToChromaticity(rgb);
+     final kelvin = CCTCalculator.chromaticityToCCT(chromaticity);
+     ```
+
+2. Verify integration:
+   - Run all tests
+   - Test with real camera
+   - Verify end-to-end flow
+
+**Estimated Time**: 30-60 minutes
+
+---
+
+## 📋 Pre-Development: Interface Contract
+
+**Before starting**, both developers agree on this interface:
+
+### Color Conversion Interface (Developer A will implement)
+
+```dart
+// Developer A will provide these functions:
+
+// In cie_color_converter.dart:
+CIEChromaticity rgbToChromaticity(RGB rgb);
+CIEXYZ rgbToXYZ(RGB linearRGB);
+RGB linearizeRGB(RGB srgb);
+
+// In cct_calculator.dart:
+double chromaticityToCCT(CIEChromaticity xy, {bool useHernandez = true});
+double calculateDUV(CIEChromaticity xy);
+```
+
+### Mock Implementation (Developer B will use during development)
+
+```dart
+// Developer B creates this mock file: lib/services/mocks/color_conversion_mock.dart
+
+import '../core/cie_color_space.dart';
+
+class MockColorConverter {
+  static CIEChromaticity rgbToChromaticity(RGB rgb) {
+    // Simple mock: estimate CCT from RGB ratio
+    final ratio = rgb.r / (rgb.b + 0.001);
+    // This is just a placeholder - will be replaced
+    return const CIEChromaticity(x: 0.3127, y: 0.3290); // D65
+  }
+  
+  static double chromaticityToCCT(CIEChromaticity xy) {
+    // Simple mock: return neutral temperature
+    return 4000.0; // Placeholder
+  }
+  
+  static double calculateDUV(CIEChromaticity xy) {
+    return 0.02; // Placeholder
+  }
+}
+```
+
+---
+
+## Workflow - Fully Parallel
+
+### Day 1: Setup & Start
+- **Both**: Agree on interfaces (15 min meeting)
+- **Developer A**: Start Steps 1-2
+- **Developer B**: Start Steps 5-6
+
+### Day 2: Continue Parallel
+- **Developer A**: Steps 3-4
+- **Developer B**: Step 7 (using mocks), Step 8 (using mocks)
+
+### Day 3: Complete & Test Independently
+- **Developer A**: Complete all steps, write tests, verify
+- **Developer B**: Complete all steps, write tests, verify with mocks
+
+### Day 4: Integration
+- **Both**: Step 9 - Replace mocks with real code (30-60 min)
+- **Both**: Integration testing
+- **Both**: Bug fixes if needed
+
+**Total Estimated Time**: 4 days with 2 developers (fully parallel)
+
+---
+
+## Testing Strategy - Independent
+
+### Developer A Tests
+**File**: `test/core/cie_color_converter_test.dart`, `test/core/cct_calculator_test.dart`
+
+```dart
+// Test with known values
+test('RGB to XYZ conversion', () {
+  final rgb = RGB(r: 1.0, g: 1.0, b: 1.0);
+  final xyz = CIEColorConverter.rgbToXYZ(rgb);
+  // Verify against known D65 white point
+});
+
+test('xy to CCT - McCamy formula', () {
+  final xy = CIEChromaticity(x: 0.3127, y: 0.3290); // D65
+  final cct = CCTCalculator.chromaticityToCCT_McCamy(xy);
+  expect(cct, closeTo(6500, 100)); // Should be ~6500K
+});
+```
+
+### Developer B Tests
+**File**: `test/services/camera_color_detector_test.dart`, `test/services/lighting_environment_detector_test.dart`
+
+```dart
+// Test with mock color conversion
+test('Detection pipeline with mocks', () {
+  // Use mock RGB data
+  final rgb = RGB(r: 0.9, g: 0.8, b: 0.7);
+  final result = detector.detectWithMock(rgb); // Uses mock converter
+  expect(result, isNotNull);
+});
+
+// Test camera service independently
+test('Camera initialization', () async {
+  final detector = CameraColorDetector();
+  final initialized = await detector.initialize();
+  expect(initialized, isTrue);
+});
+```
+
+### Integration Tests (After Step 9)
+**File**: `test/integration/color_detection_integration_test.dart`
+
+```dart
+// Test full pipeline with real implementations
+test('End-to-end detection', () async {
+  // Uses real camera, real color conversion
+  final result = await detector.detectColorTemperature();
+  expect(result.kelvin, greaterThan(2000));
+  expect(result.kelvin, lessThan(10000));
+});
+```
+
+---
+
+## Interface Contract Document
+
+**Create this file first**: `lib/core/color_conversion_interface.dart`
+
+```dart
+/// Interface contract for color conversion
+/// 
+/// Developer A will implement these functions
+/// Developer B will use these signatures (with mocks during development)
+
+import 'cie_color_space.dart';
+
+/// Convert sRGB to CIE xy chromaticity coordinates
+/// 
+/// Parameters:
+/// - rgb: RGB color values (0.0 to 1.0)
+/// 
+/// Returns: xy chromaticity coordinates
+CIEChromaticity rgbToChromaticity(RGB rgb);
+
+/// Convert xy chromaticity to Correlated Color Temperature (Kelvin)
+/// 
+/// Parameters:
+/// - xy: CIE 1931 xy chromaticity coordinates
+/// - useHernandez: Use Hernández-Andrés method (more accurate) vs McCamy
+/// 
+/// Returns: Color temperature in Kelvin (2000-20000K)
+double chromaticityToCCT(CIEChromaticity xy, {bool useHernandez = true});
+
+/// Calculate distance from Planckian locus (D_uv)
+/// 
+/// Parameters:
+/// - xy: CIE 1931 xy chromaticity coordinates
+/// 
+/// Returns: D_uv value (lower = closer to blackbody)
+double calculateDUV(CIEChromaticity xy);
+```
+
+**Both developers import this interface** and implement/use accordingly.
+
+---
+
+## Mock Implementation Template
+
+**Developer B creates**: `lib/services/mocks/color_conversion_mock.dart`
+
+```dart
+import '../core/cie_color_space.dart';
+import '../core/color_conversion_interface.dart';
+
+/// Mock implementation for parallel development
+/// 
+/// This will be replaced with real implementation in Step 9
+class MockColorConverter {
+  static CIEChromaticity rgbToChromaticity(RGB rgb) {
+    // Simple estimation: R/B ratio indicates color temperature
+    final ratio = rgb.r / (rgb.b + 0.001);
+    
+    // Rough mapping (will be replaced with real CIE conversion)
+    double x, y;
+    if (ratio > 1.2) {
+      // Cool light (more blue) - higher K
+      x = 0.30;
+      y = 0.31;
+    } else if (ratio < 0.8) {
+      // Warm light (more red) - lower K
+      x = 0.45;
+      y = 0.41;
+    } else {
+      // Neutral
+      x = 0.3127;
+      y = 0.3290; // D65
+    }
+    
+    return CIEChromaticity(x: x, y: y);
+  }
+  
+  static double chromaticityToCCT(CIEChromaticity xy) {
+    // Simple linear approximation (will be replaced with McCamy/Hernández-Andrés)
+    // This is just to unblock development
+    final ratio = xy.x / (xy.y + 0.001);
+    return 3000 + (ratio - 0.9) * 3000;
+  }
+  
+  static double calculateDUV(CIEChromaticity xy) {
+    // Placeholder - always return medium confidence
+    return 0.03;
+  }
+}
+```
+
+---
+
+## Integration Checklist (Step 9)
+
+When both developers complete their work:
+
+- [ ] Developer A: All tests passing
+- [ ] Developer B: All tests passing (with mocks)
+- [ ] Both: Review each other's code
+- [ ] Developer B: Replace `MockColorConverter` imports with real imports
+- [ ] Developer B: Update `lighting_environment_detector.dart` to use real functions
+- [ ] Both: Run integration tests
+- [ ] Both: Test with real camera on device
+- [ ] Both: Verify end-to-end flow works
+- [ ] Both: Remove mock files
+- [ ] Both: Update documentation
+
+---
+
+## Estimated Timeline - Fully Parallel
+
+| Day | Developer A | Developer B | Notes |
+|-----|-------------|-------------|-------|
+| **Day 1** | Steps 1-2 | Steps 5-6 | 100% parallel |
+| **Day 2** | Steps 3-4 | Steps 7-8 (with mocks) | 100% parallel |
+| **Day 3** | Testing & fixes | Testing & fixes | Independent |
+| **Day 4** | Integration support | Integration (Step 9) | 30-60 min integration |
+
+**Total Estimated Time**: 4 days with 2 developers (fully parallel, no blocking)
 
 ---
 
