@@ -58,7 +58,17 @@ class RecordingManager {
       meta: meta,
     );
 
+    try {
+      print('RecordingManager: Attempting to save session ${session.id}');
+      print('RecordingManager: Sample count: ${session.samples.length}');
     await storage.saveSession(session);
+      print('RecordingManager: Session saved successfully');
+    } catch (e, stackTrace) {
+      print('RecordingManager: Error saving session: $e');
+      print('RecordingManager: Stack trace: $stackTrace');
+      rethrow;
+    }
+    
     return session;
   }
 }

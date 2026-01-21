@@ -28,6 +28,7 @@ class CircadianConstants {
   static const Duration maxContinuousExposure = Duration(hours: 2);
 
   // Screen brightness to lux mapping (approximate)
+  // These values are measured at reference distance (defaultViewingDistance)
   static Map<double, double> screenBrightnessToLux = {
     0.0: 0.0,
     0.2: 40.0,
@@ -37,6 +38,21 @@ class CircadianConstants {
     0.8: 220.0,
     1.0: 300.0,
   };
+  
+  // Viewing distance settings
+  static double viewingDistanceCm = 35.0; // User's typical viewing distance in cm
+  static const double defaultViewingDistanceCm = 35.0; // Default viewing distance
+  static const double referenceViewingDistanceCm = 35.0; // Distance at which screenBrightnessToLux was calibrated
+
+  // Sensor smoothing
+  static bool sensorSmoothingEnabled = true;
+  static double sensorSmoothingFactor = 0.7; // EMA alpha (0-1, higher = more responsive)
+  
+  // Sensor validation thresholds
+  static const double minValidLux = 0.0; // Minimum valid lux reading
+  static const double maxValidLux = 10000.0; // Maximum valid lux reading (matches maxSafeLux)
+  static const double outlierThresholdPercent = 0.5; // 50% change from smoothed value = outlier
+  static const double deadBandLux = 1.0; // Ignore changes smaller than this (lux)
 }
 
 class CircadianMath {

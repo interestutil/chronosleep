@@ -13,6 +13,7 @@ dependencies:
   # Sensors
   sensors_plus: ^4.0.2
   light: ^4.1.0
+  screen_brightness: ^2.1.7
   
   # Device info
   device_info_plus: ^9.1.1
@@ -35,6 +36,7 @@ dependencies:
   # Export
   csv: ^6.0.0
   pdf: ^3.10.7
+  share_plus: ^7.2.1
   
   # Math
   collection: ^1.18.0

@@ -2,11 +2,12 @@
 
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:permission_handler/permission_handler.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../models/results_model.dart';
 import '../../core/prc_model.dart';
-import '../../services/storage_service.dart';
 import 'package:intl/intl.dart';
 import 'simulation_screen.dart';
 
@@ -169,25 +170,25 @@ class _ResultsScreenState extends State<ResultsScreen> {
             const SizedBox(height: 16),
 
             // Score number
-            Column(
+                  Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${score.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                    children: [
+                      Text(
+                        '${score.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          color: Colors.white,
                     fontSize: 64,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const Text(
-                  'out of 100',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Text(
+                        'out of 100',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
             ),
 
             const SizedBox(height: 16),
@@ -195,6 +196,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
             Text(
               widget.results.riskLevel,
               textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,
@@ -221,7 +224,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
       crossAxisCount: 2,
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      childAspectRatio: 1.4,
+      childAspectRatio: 1.3, // Slightly wider to accommodate text
       children: [
         _buildMetricCard(
           'Melatonin Suppression',
@@ -257,32 +260,36 @@ class _ResultsScreenState extends State<ResultsScreen> {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
               value,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: color,
+                ),
+                maxLines: 1,
               ),
             ),
             const SizedBox(height: 4),
-            SizedBox(
-              height: 32,
+            Flexible(
               child: Text(
-                label,
-                textAlign: TextAlign.center,
+              label,
+              textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey,
+              style: const TextStyle(
+                  fontSize: 11,
+                color: Colors.grey,
+                  height: 1.2,
                 ),
               ),
             ),
@@ -325,7 +332,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Text(
+            SelectableText(
               _generateInterpretation(),
               style: const TextStyle(
                 fontSize: 14,
@@ -342,7 +349,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
   String _generateInterpretation() {
     final msi = widget.results.msiPredicted;
     final phaseShift = widget.results.phaseShift;
-    final avgCS = widget.results.averageCS;
 
     String interpretation = '';
 
@@ -942,6 +948,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 color: Colors.grey.shade700,
                 fontStyle: FontStyle.italic,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -964,9 +972,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
+              flex: 3,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -976,34 +985,49 @@ class _ResultsScreenState extends State<ResultsScreen> {
                       fontSize: 13,
                       fontWeight: FontWeight.bold,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     description,
                     style: TextStyle(
                       fontSize: 11,
                       color: Colors.grey.shade600,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            Row(
-              children: [
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
+            const SizedBox(width: 8),
+            Expanded(
+              flex: 2,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isMatch ? Colors.green.shade700 : Colors.orange.shade700,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.end,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    isMatch ? Icons.check_circle : Icons.info_outline,
+                    size: 16,
                     color: isMatch ? Colors.green.shade700 : Colors.orange.shade700,
                   ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  isMatch ? Icons.check_circle : Icons.info_outline,
-                  size: 16,
-                  color: isMatch ? Colors.green.shade700 : Colors.orange.shade700,
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -1016,6 +1040,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
               color: Colors.grey.shade600,
               fontFamily: 'monospace',
             ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ],
@@ -1050,20 +1076,32 @@ class _ResultsScreenState extends State<ResultsScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          Flexible(
+            flex: 2,
+            child: Text(
             label,
             style: const TextStyle(
               fontSize: 14,
               color: Colors.grey,
             ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          Text(
+          const SizedBox(width: 8),
+          Flexible(
+            flex: 3,
+            child: Text(
             value,
             style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.end,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -1134,32 +1172,31 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
 // ==================== ACTIONS ====================
 
-  void _shareResults() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Share functionality coming soon')),
-    );
+  void _shareResults() async {
+    // Use the same export functionality but with share intent
+    _exportResults();
   }
 
-  void _exportResults() {
-    () async {
-      try {
-        // Request storage permission if needed (Android)
-        if (Platform.isAndroid) {
-          final status = await Permission.storage.status;
-          if (!status.isGranted) {
-            final result = await Permission.storage.request();
-            if (!result.isGranted) {
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Storage permission is required to export files'),
-                  backgroundColor: Colors.orange,
-                ),
-              );
-              return;
-            }
-          }
-        }
+  void _exportResults() async {
+    try {
+      // Show loading indicator
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 12),
+              Text('Preparing export...'),
+            ],
+          ),
+          duration: Duration(seconds: 2),
+        ),
+      );
 
         final buffer = StringBuffer();
         buffer.writeln('timestamp,lux,melanopic,cs');
@@ -1171,34 +1208,68 @@ class _ResultsScreenState extends State<ResultsScreen> {
           buffer.writeln('$t,$lux,$mel,$cs');
         }
 
-        final storage = StorageService();
-        final dir = await storage.appDocDir;
-        // Ensure directory exists
-        if (!await dir.exists()) {
-          await dir.create(recursive: true);
-        }
-        final file = File(
-          '${dir.path}/results_${widget.results.sessionId}.csv',
-        );
+      // Create temporary file in cache directory (accessible for sharing)
+      final tempDir = await getTemporaryDirectory();
+      final fileName = 'chronosleep_results_${widget.results.sessionId.substring(0, 8)}_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.csv';
+      final file = File('${tempDir.path}/$fileName');
+      
+      debugPrint('Export: Creating temp file: ${file.path}');
+      
         await file.writeAsString(buffer.toString());
+      
+      // Verify file was written
+      if (!await file.exists()) {
+        throw Exception('File was not created');
+      }
+      
+      final fileSize = await file.length();
+      debugPrint('Export: File created successfully, size: $fileSize bytes');
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      
+      // Share the file - user can choose where to save it
+      final xFile = XFile(file.path);
+      await Share.shareXFiles(
+        [xFile],
+        text: 'ChronoTherapy Analyzer Results - Session ${widget.results.sessionId.substring(0, 8)}',
+        subject: 'Circadian Light Analysis Results',
+      );
 
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Exported to ${file.path}'),
-            duration: const Duration(seconds: 3),
+        const SnackBar(
+          content: Text('File ready to share. Choose where to save it.'),
+          duration: Duration(seconds: 3),
           ),
         );
-      } catch (e) {
+    } catch (e, stackTrace) {
         if (!mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Export failed: $e'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Export failed', 
+                style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text('Error: $e', style: const TextStyle(fontSize: 12)),
+            ],
+          ),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 4),
+          duration: const Duration(seconds: 6),
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () {},
+          ),
           ),
         );
-      }
-    }();
+      // Log full error for debugging
+      debugPrint('Export error: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
   }
 }

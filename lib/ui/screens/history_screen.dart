@@ -5,7 +5,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../services/storage_service.dart';
-import '../../models/session_data.dart';
 import '../../services/processing_pipeline.dart';
 import '../../services/multi_day_planner.dart';
 import '../../models/results_model.dart';

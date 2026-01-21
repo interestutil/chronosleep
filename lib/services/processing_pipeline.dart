@@ -102,7 +102,7 @@ class ProcessingPipeline {
           .map((e) => e.end.difference(e.start).inMinutes)
           .fold<int>(0, (a, b) => a + b);
       meta ??= {};
-      meta!['sleepEpisodeCount'] = sleepEpisodes.length;
+      meta['sleepEpisodeCount'] = sleepEpisodes.length;
       meta['sleepMinutes'] = totalSleepMinutes;
     }
     return ResultsModel(
