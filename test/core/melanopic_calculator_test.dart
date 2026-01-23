@@ -3,7 +3,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:chronotherapy_app/core/melanopic_calculator.dart';
 import 'package:chronotherapy_app/models/light_sample.dart';
-import 'package:chronotherapy_app/utils/constants.dart';
 
 void main() {
   group('MelanopicCalculator', () {

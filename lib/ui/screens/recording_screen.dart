@@ -8,8 +8,10 @@ import '../../services/sensor_service.dart';
 import '../../services/storage_service.dart';
 import '../../services/screen_brightness_tracker.dart';
 import '../../services/foreground_service.dart';
+import '../../services/lighting_environment_detector.dart';
 import '../../core/melanopic_calculator.dart';
 import '../../utils/constants.dart';
+import '../../models/light_sample.dart';
 import 'processing_screen.dart';
 
 class RecordingScreen extends StatefulWidget {
@@ -32,6 +34,12 @@ class _RecordingScreenState extends State<RecordingScreen> with WidgetsBindingOb
   StreamSubscription? _sensorSubscription;
 
   String _selectedLightType = 'neutral_led_4000k';
+  
+  // Lighting detection
+  LightingEnvironmentDetector? _lightingDetector;
+  bool _isDetectingLighting = false;
+  LightingDetectionResult? _detectionResult;
+  List<LightSample> _recentSamples = []; // Store recent samples for heuristic fallback
 
   @override
   void initState() {
@@ -100,23 +108,136 @@ class _RecordingScreenState extends State<RecordingScreen> with WidgetsBindingOb
       sensorService: _sensorService,
       storage: storageService,
     );
+    
+    // Initialize lighting detector
+    _lightingDetector = LightingEnvironmentDetector();
+    _lightingDetector?.initialize();
 
     // Listen to sensor updates for real-time display
     _sensorSubscription = _sensorService.sampleStream.listen((sample) {
-      if (mounted && _isRecording) {
-        setState(() {
-          // Calculate total lux including screen contribution (same as processing pipeline)
-          final totalLux = MelanopicCalculator.calculateTotalLuxAtEye(sample);
-          _currentLux = totalLux;
-          
-          // Calculate CS using total lux (includes screen contribution)
-          final melanopicRatio =
-              CircadianConstants.melanopicRatios[_selectedLightType] ?? 0.6;
-          final melanopicLux = totalLux * melanopicRatio;
-          _currentCS = (melanopicLux / 1000.0).clamp(0.0, 0.7);
-        });
+      if (mounted) {
+        // Store recent samples for heuristic detection (keep last 10)
+        _recentSamples.add(sample);
+        if (_recentSamples.length > 10) {
+          _recentSamples.removeAt(0);
+        }
+        
+        if (_isRecording) {
+          setState(() {
+            // Calculate total lux including screen contribution (same as processing pipeline)
+            final totalLux = MelanopicCalculator.calculateTotalLuxAtEye(sample);
+            _currentLux = totalLux;
+            
+            // Calculate CS using total lux (includes screen contribution)
+            final melanopicRatio =
+                CircadianConstants.melanopicRatios[_selectedLightType] ?? 0.6;
+            final melanopicLux = totalLux * melanopicRatio;
+            _currentCS = (melanopicLux / 1000.0).clamp(0.0, 0.7);
+          });
+        }
       }
     });
+  }
+  
+  Future<void> _detectLightingEnvironment() async {
+    if (_lightingDetector == null) return;
+    
+    setState(() {
+      _isDetectingLighting = true;
+      _detectionResult = null;
+    });
+    
+    try {
+      // Get current sensor values
+      final currentLux = _currentLux > 0 ? _currentLux : (_recentSamples.isNotEmpty 
+          ? _recentSamples.last.ambientLux 
+          : 0.0);
+      final screenBrightness = _recentSamples.isNotEmpty 
+          ? _recentSamples.last.screenBrightness 
+          : null;
+      
+      // Perform detection
+      final result = await _lightingDetector!.autoDetect(
+        time: DateTime.now(),
+        currentLux: currentLux,
+        recentSamples: _recentSamples,
+        screenBrightness: screenBrightness,
+        preferCamera: true,
+      );
+      
+      setState(() {
+        _detectionResult = result;
+        _isDetectingLighting = false;
+      });
+      
+      // Auto-select detected light type if confidence is high
+      if (result.confidence > 0.6) {
+        setState(() {
+          _selectedLightType = result.lightType;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Detected: ${_formatLightTypeName(result.lightType)} '
+              '(${(result.confidence * 100).toStringAsFixed(0)}% confidence)',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Undo',
+              textColor: Colors.white,
+              onPressed: () {
+                // User can manually change it back
+              },
+            ),
+          ),
+        );
+      } else {
+        // Low confidence - show result but don't auto-select
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Detection confidence low (${(result.confidence * 100).toStringAsFixed(0)}%). '
+              'Please verify manually.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() {
+        _isDetectingLighting = false;
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Detection failed: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+  
+  String _formatLightTypeName(String lightType) {
+    switch (lightType) {
+      case 'warm_led_2700k':
+        return 'Warm LED (2700K)';
+      case 'neutral_led_4000k':
+        return 'Neutral LED (4000K)';
+      case 'cool_led_5000k':
+        return 'Cool LED (5000K)';
+      case 'daylight_6500k':
+        return 'Daylight (6500K)';
+      case 'phone_screen':
+        return 'Phone Screen';
+      case 'incandescent':
+        return 'Incandescent';
+      default:
+        return lightType;
+    }
   }
 
   void _startRecording() async {
@@ -239,6 +360,7 @@ class _RecordingScreenState extends State<RecordingScreen> with WidgetsBindingOb
     _timer?.cancel();
     _sensorSubscription?.cancel();
     _brightnessTracker?.dispose();
+    _lightingDetector?.dispose();
     super.dispose();
   }
 
@@ -324,15 +446,109 @@ class _RecordingScreenState extends State<RecordingScreen> with WidgetsBindingOb
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Select your lighting environment:',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Select your lighting environment:',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            // Detect with Camera button
+                            ElevatedButton.icon(
+                              onPressed: _isDetectingLighting ? null : _detectLightingEnvironment,
+                              icon: _isDetectingLighting
+                                  ? const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : const Icon(Icons.camera_alt, size: 18),
+                              label: Text(_isDetectingLighting ? 'Detecting...' : 'Auto-Detect'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white.withOpacity(0.2),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 16),
+                        // Detection result display
+                        if (_detectionResult != null) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  _detectionResult!.method == 'cie_xy'
+                                      ? Icons.camera_alt
+                                      : Icons.psychology,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Detected: ${_formatLightTypeName(_detectionResult!.lightType)}',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'Confidence: ${(_detectionResult!.confidence * 100).toStringAsFixed(0)}%',
+                                            style: TextStyle(
+                                              color: Colors.white.withOpacity(0.8),
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                          if (_detectionResult!.kelvin != null) ...[
+                                            const SizedBox(width: 12),
+                                            Text(
+                                              '${_detectionResult!.kelvin!.toStringAsFixed(0)}K',
+                                              style: TextStyle(
+                                                color: Colors.white.withOpacity(0.8),
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                         DropdownButtonFormField<String>(
                           value: _selectedLightType,
                           decoration: const InputDecoration(
@@ -370,6 +586,7 @@ class _RecordingScreenState extends State<RecordingScreen> with WidgetsBindingOb
                             if (value != null) {
                               setState(() {
                                 _selectedLightType = value;
+                                _detectionResult = null; // Clear detection when manually changed
                               });
                             }
                           },

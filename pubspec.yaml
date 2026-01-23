@@ -15,6 +15,12 @@ dependencies:
   light: ^4.1.0
   screen_brightness: ^2.1.7
   
+  # Camera
+  camera: ^0.11.0+2
+  
+  # Image processing
+  image: ^4.5.4
+  
   # Device info
   device_info_plus: ^9.1.1
   permission_handler: ^11.1.0
