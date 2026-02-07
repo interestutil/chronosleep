@@ -326,14 +326,13 @@ class _RecordingScreenState extends State<RecordingScreen> with WidgetsBindingOb
 
       // Navigate to processing screen
       if (mounted) {
-        Navigator.pushReplacement(
+        Navigator.pushReplacementNamed(
           context,
-          MaterialPageRoute(
-            builder: (context) => ProcessingScreen(
-              session: session,
-              lightType: _selectedLightType,
-            ),
-          ),
+          '/processing',
+          arguments: {
+            'session': session,
+            'lightType': _selectedLightType,
+          },
         );
       }
     } catch (e) {

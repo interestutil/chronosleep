@@ -70,12 +70,7 @@ class HomeScreen extends StatelessWidget {
                 // Main action button
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const RecordingScreen(),
-                      ),
-                    );
+                    Navigator.pushNamed(context, '/recording');
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
@@ -107,12 +102,7 @@ class HomeScreen extends StatelessWidget {
                 // Secondary buttons
                 OutlinedButton.icon(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const HistoryScreen(),
-                      ),
-                    );
+                    Navigator.pushNamed(context, '/history');
                   },
                   icon: const Icon(Icons.history),
                   label: const Text('View Past Sessions'),
@@ -130,12 +120,7 @@ class HomeScreen extends StatelessWidget {
 
                 OutlinedButton.icon(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const SettingsScreen(),
-                      ),
-                    );
+                    Navigator.pushNamed(context, '/settings');
                   },
                   icon: const Icon(Icons.settings),
                   label: const Text('Settings & Calibration'),

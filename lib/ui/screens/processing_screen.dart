@@ -48,11 +48,10 @@ class _ProcessingScreenState extends State<ProcessingScreen>
 
       // Navigate to results
       if (mounted) {
-        Navigator.pushReplacement(
+        Navigator.pushReplacementNamed(
           context,
-          MaterialPageRoute(
-            builder: (context) => ResultsScreen(results: results),
-          ),
+          '/results',
+          arguments: results,
         );
       }
     } catch (e) {

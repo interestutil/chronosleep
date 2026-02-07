@@ -84,11 +84,9 @@ class _SimulationScreenState extends State<SimulationScreen> {
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            ResultsScreen(results: _simulatedResults!),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      '/results',
+                      arguments: _simulatedResults!,
                     );
                   },
                   icon: const Icon(Icons.bar_chart),

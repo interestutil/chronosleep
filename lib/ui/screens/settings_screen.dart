@@ -346,14 +346,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const DebugVerificationScreen(),
-                    ),
-                  );
-                },
+                  onPressed: () {
+                    Navigator.pushNamed(context, '/debug');
+                  },
                 icon: const Icon(Icons.bug_report),
                 label: const Text('Open Debug & Verification'),
                 style: OutlinedButton.styleFrom(

@@ -65,15 +65,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }
 
     if (!mounted) return;
-    Navigator.push(
+    Navigator.pushNamed(
       context,
-      MaterialPageRoute(
-        builder: (_) => ProcessingScreen(
-          session: session,
-          lightType: (session.meta?['lightType'] as String?) ??
-              'neutral_led_4000k',
-        ),
-      ),
+      '/processing',
+      arguments: {
+        'session': session,
+        'lightType': (session.meta?['lightType'] as String?) ?? 'neutral_led_4000k',
+      },
     );
   }
 
@@ -170,11 +168,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
       results.sort((a, b) => a.startTime.compareTo(b.startTime));
       final plan = _multiDayPlanner.planFromHistory(results);
 
-      Navigator.push(
+      Navigator.pushNamed(
         context,
-        MaterialPageRoute(
-          builder: (_) => MultiDayPlanScreen(plan: plan),
-        ),
+        '/multi_day_plan',
+        arguments: {'plan': plan},
       );
     } catch (e) {
       if (!mounted) return;

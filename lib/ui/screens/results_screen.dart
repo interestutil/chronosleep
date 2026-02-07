@@ -417,11 +417,9 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 ),
                 TextButton.icon(
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            SimulationScreen(baseResults: widget.results),
-                      ),
+                    Navigator.of(context).pushNamed(
+                      '/simulation',
+                      arguments: {'baseResults': widget.results},
                     );
                   },
                   icon: const Icon(Icons.science),
