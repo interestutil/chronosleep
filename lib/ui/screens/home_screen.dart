@@ -12,7 +12,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ChronoTherapy Analyzer'),
+        centerTitle: true,
+        title: const Text('ChronoSleep'),
         backgroundColor: Colors.deepPurple,
       ),
       body: Container(
