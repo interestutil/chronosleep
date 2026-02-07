@@ -43,7 +43,7 @@ dependencies:
   csv: ^6.0.0
   pdf: ^3.10.7
   share_plus: ^7.2.1
-  
+  shared_preferences: ^2.0.0
   # Math
   collection: ^1.18.0
 

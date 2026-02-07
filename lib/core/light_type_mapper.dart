@@ -58,4 +58,13 @@ class LightTypeMapper {
     
     return confidence.clamp(0.0, 1.0);
   }
+
+  /// Added small helper map (UI theme names live in core/theme_constants.dart for main UI).
+  static const Map<String, String> uiThemeNames = {
+    'system': 'System Default',
+    'light': 'Light',
+    'dark': 'Dark',
+    'sepia': 'Sepia',
+    'blue': 'Cool Blue',
+  };
 }
